@@ -1,0 +1,152 @@
+version: '3.7'
+services:
+  # USER SERVICE
+  user_service_db:
+    image: postgres:13
+    container_name: user_service_db
+    ports:
+      - '${USER_DB_PORT}:5432'
+    environment:
+      POSTGRES_DB: ${USER_DB_DATABASE}
+      POSTGRES_USER: ${USER_DB_USERNAME}
+      POSTGRES_PASSWORD: ${USER_DB_PASSWORD}
+    volumes:
+      - user_service_data:/var/lib/postgresql/data
+    networks:
+      - rexpense_network
+
+  user_service:
+    build:
+      context: ./user_service
+      dockerfile: Dockerfile
+    container_name: user_service
+    ports:
+      - '${USER_APP_PORT}:${USER_APP_PORT}'
+    environment:
+      - NODE_ENV=development
+      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
+      - JWT_ACCESS_EXPIRE_IN=${JWT_ACCESS_EXPIRE_IN}
+      - JWT_REFRESH_SECRET=${USER_JWT_REFRESH_SECRET}
+      - JWT_REFRESH_EXPIRE_IN=${USER_JWT_REFRESH_EXPIRE_IN}
+      - DB_HOST=user_service_db
+      - DB_PORT=5432
+      - DB_DATABASE=${USER_DB_DATABASE}
+      - DB_USERNAME=${USER_DB_USERNAME}
+      - DB_PASSWORD=${USER_DB_PASSWORD}
+      - DB_SYNCHRONIZE=${USER_DB_SYNCHRONIZE}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL}
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+    depends_on:
+      - user_service_db
+      - kafka
+      - kafka-init
+    volumes:
+      - ./user_service:/app
+      - /app/node_modules
+    networks:
+      - rexpense_network
+
+  # TRANSACTION SERVICE
+  transaction_service_db:
+    image: postgres:13
+    container_name: transaction_service_db
+    ports:
+      - '${TRANSACTION_DB_PORT}:5432'
+    environment:
+      POSTGRES_DB: ${TRANSACTION_DB_DATABASE}
+      POSTGRES_USER: ${TRANSACTION_DB_USERNAME}
+      POSTGRES_PASSWORD: ${TRANSACTION_DB_PASSWORD}
+    volumes:
+      - transaction_service_data:/var/lib/postgresql/data
+    networks:
+      - rexpense_network
+
+  transaction_service:
+    build:
+      context: ./transaction_service
+      dockerfile: Dockerfile
+    container_name: transaction_service
+    ports:
+      - '${TRANSACTION_APP_PORT}:${TRANSACTION_APP_PORT}'
+    environment:
+      - SECRET_KEY=${TRANSACTION_SECRET_KEY}
+      - DB_HOST=transaction_service_db
+      - DB_PORT=5432
+      - DB_DATABASE=${TRANSACTION_DB_DATABASE}
+      - DB_USERNAME=${TRANSACTION_DB_USERNAME}
+      - DB_PASSWORD=${TRANSACTION_DB_PASSWORD}
+      - DB_SYNCHRONIZE=${TRANSACTION_DB_SYNCHRONIZE}
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+    depends_on:
+      - transaction_service_db
+      - kafka
+      - kafka-init
+    volumes:
+      - ./transaction_service:/app
+    networks:
+      - rexpense_network
+
+  # KAFKA & ZOOKEEPER
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: rexpense_zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - rexpense_network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.2
+    container_name: rexpense_kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - rexpense_network
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.3.2
+    container_name: rexpense_kafka_init
+    depends_on:
+      - kafka
+    volumes:
+      - ./kafka:/scripts
+    command: >
+      bash -c "
+        chmod +x /scripts/init-topics.sh &&
+        /scripts/init-topics.sh"
+    networks:
+      - rexpense_network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:29092
+      - KAFKA_CLUSTERS_0_AUTHENTICATION_METHOD=none
+    depends_on:
+      - kafka
+    networks:
+      - rexpense_network
+
+networks:
+  rexpense_network:
+    driver: bridge
+
+volumes:
+  user_service_data:
+  transaction_service_data:

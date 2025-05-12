@@ -1,0 +1,102 @@
+# Python
+**/__pycache__/
+**/*.pyc
+**/*.py[cod]
+**/*$py.class
+**/venv/
+
+# Node
+**/node_modules/
+**/package-lock.json
+**/yarn.lock
+**/pnpm-lock.yaml
+
+# Compiled output
+**/dist
+**/build
+
+# Logs
+**/logs
+**/*.log
+**/npm-debug.log*
+**/pnpm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/lerna-debug.log*
+
+# OS
+**/.DS_Store
+
+# Tests
+**/coverage
+**/.nyc_output
+**/.coverage
+**/nosetests.xml
+**/pytest_cache/
+**/test_*.py
+
+# IDEs and editors
+**/.vscode/
+**/.idea/
+**/.project
+**/.classpath
+**/.c9/
+**/*.launch
+**/.settings/
+**/*.sublime-workspace
+**/*.swp
+**/*.swo
+
+# VSCode - allow some settings
+!**/.vscode/settings.json
+!**/.vscode/tasks.json
+!**/.vscode/launch.json
+!**/.vscode/extensions.json
+
+# dotenv environment variable files
+**/.env
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
+**/.env.local
+**/*.env
+
+# Django stuff
+**/local_settings.py
+**/db.sqlite3
+**/media/
+**/staticfiles/
+
+# Migrations
+**/migrations/__pycache__/
+**/migrations/*.pyc
+
+# Celery
+**/celerybeat-schedule
+**/celerybeat.pid
+
+# MyPy
+**/.mypy_cache/
+
+# Docker
+**/*.dockerfile
+**/docker-compose.override.yml
+**/transaction_service_data/
+**/user_service_data/
+
+# Security
+**/config/settings/secrets.json
+
+# Temp directories
+**/.temp
+**/.tmp
+
+# Runtime data
+**/pids
+**/*.pid
+**/*.seed
+**/*.pid.lock
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+**/report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+**/e_data/

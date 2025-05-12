@@ -1,0 +1,13 @@
+class KafkaTopics:
+    USER_SERVICE = 'user_service_events'
+    TRANSACTION_SERVICE = 'transaction_service_events'
+
+class UserMessageTypes:
+    USER_CREATED = 'USER_CREATED'
+    USER_UPDATED = 'USER_UPDATED'
+    USER_DELETED = 'USER_DELETED'
+
+class TransactionMessageTypes:
+    TRANSACTION_CREATED = 'TRANSACTION_CREATED'
+    TRANSACTION_UPDATED = 'TRANSACTION_UPDATED'
+    TRANSACTION_DELETED = 'TRANSACTION_DELETED'
