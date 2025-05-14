@@ -124,7 +124,7 @@ Pull requests are welcome! For major changes, please open an issue first to disc
 ## Roadmap
 - [x] User service (NestJS)
 - [x] Transaction service (Django)
-- [~] Budget service (Django) _(in progress)_
+- [ ] Budget service (Django) _(in progress)_
 - [ ] Notification service (Go)
 - [ ] Data pipeline & analytics
 
