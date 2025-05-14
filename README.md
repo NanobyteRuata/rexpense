@@ -18,8 +18,10 @@ This monorepo contains all backend services, infrastructure, and configuration f
   - Transaction CRUD, category management
   - Synchronizes user data via Kafka events
   - Publishes transaction events
-- **(Planned)** budget_service (Django/Python)
+- **budget_service** (Django/Python)
   - Budget tracking and alerts
+  - Synchronizes user data via Kafka events
+  - Currently in active development!
 - **(Planned)** notification_service (Go)
   - Real-time notifications for users
 
@@ -61,8 +63,15 @@ This monorepo contains all backend services, infrastructure, and configuration f
    - For Django services:
      ```bash
      docker-compose exec transaction_service python manage.py migrate
-     # For future: docker-compose exec budget_service python manage.py migrate
+     docker-compose exec budget_service python manage.py migrate
      ```
+
+---
+
+## Kafka Topic Initialization & Consumer Robustness
+
+- Kafka topics are created by the `kafka-init` service using `init-topics.sh`.
+- Kafka consumers are wrapped in a retry loop with exponential backoff, so they automatically recover from transient errors or topic unavailability.
 
 ---
 
@@ -115,7 +124,7 @@ Pull requests are welcome! For major changes, please open an issue first to disc
 ## Roadmap
 - [x] User service (NestJS)
 - [x] Transaction service (Django)
-- [ ] Budget service (Django)
+- [~] Budget service (Django) _(in progress)_
 - [ ] Notification service (Go)
 - [ ] Data pipeline & analytics
 
