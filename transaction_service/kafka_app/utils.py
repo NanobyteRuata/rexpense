@@ -1,19 +1,14 @@
 import logging
 import datetime
+from .constants import KafkaTopics
 
 logger = logging.getLogger(__name__)
 
-def handle_user_registered(data):
+def handle_user_registered(payload):
     """Process user_registered events"""
     try:
         # Use lazy import to avoid circular reference during Django startup
         from transaction.models import UserReference
-        
-        # Extract payload from structured message
-        payload = data.get('payload', {})
-        if not payload:
-            # Fallback for direct messages without wrapper
-            payload = data
             
         user_id = payload.get('id')
         email = payload.get('email')
@@ -40,13 +35,12 @@ def handle_user_registered(data):
     except Exception as e:
         logger.error(f"Error handling user.registered event: {e}")
 
-def handle_user_updated(data):
+def handle_user_updated(payload):
     """Process user.updated events to update UserReference"""
     try:
         # Use lazy import to avoid circular reference during Django startup
         from transaction.models import UserReference
-        
-        payload = data.get('payload', {})
+
         user_id = payload.get('id')
         email = payload.get('email')
         name = payload.get('name')
@@ -72,13 +66,12 @@ def handle_user_updated(data):
     except Exception as e:
         logger.error(f"Error handling user.updated event: {e}")
 
-def handle_user_deleted(data):
+def handle_user_deleted(payload):
     """Process user.deleted events to remove UserReference"""
     try:
         # Use lazy import to avoid circular reference during Django startup
         from transaction.models import UserReference
-        
-        payload = data.get('payload', {})
+
         user_id = payload.get('id')
         
         logger.info(f"Received user.deleted event for user_id={user_id}")
@@ -94,27 +87,19 @@ def handle_user_deleted(data):
     except Exception as e:
         logger.error(f"Error handling user.deleted event: {e}")
 
-# Import UserMessageTypes inside function or use string constants
-# to avoid possible circular imports with EVENT_HANDLERS
 def get_event_handlers():
-    """Return event handlers dictionary when needed to avoid circular imports"""
-    from .constants import UserMessageTypes
-    
     return {
-        UserMessageTypes.USER_CREATED: handle_user_registered,
-        UserMessageTypes.USER_UPDATED: handle_user_updated,
-        UserMessageTypes.USER_DELETED: handle_user_deleted
+        KafkaTopics.USER_CREATED: handle_user_registered,
+        KafkaTopics.USER_UPDATED: handle_user_updated,
+        KafkaTopics.USER_DELETED: handle_user_deleted
     }
 
 def event_router(topic, data):
-    """Route events to the appropriate handler based on event type"""
-    from .constants import UserMessageTypes
-    
-    event_type = data.get('type')
-    event_handlers = get_event_handlers()
-    
-    if event_type in event_handlers:
-        logger.info(f"Routing event type: {event_type} from topic: {topic}")
-        event_handlers[event_type](data)
+    if topic == KafkaTopics.USER_CREATED:
+        handle_user_registered(data)
+    elif topic == KafkaTopics.USER_UPDATED:
+        handle_user_updated(data)
+    elif topic == KafkaTopics.USER_DELETED:
+        handle_user_deleted(data)
     else:
-        logger.warning(f"No handler for event type: {event_type}")
+        logger.warning(f"No handler for topic: {topic}")

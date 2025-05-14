@@ -8,7 +8,7 @@ import { ResponseFormat } from 'src/common/models/response-format.model';
 import { IPaginationOptions } from 'nestjs-typeorm-paginate';
 import { paginate } from 'nestjs-typeorm-paginate';
 import { KafkaService } from 'src/kafka/kafka.service';
-import { MessageTypes } from 'src/kafka/kafka.constants';
+import { KafkaTopics } from 'src/kafka/kafka.constants';
 
 @Injectable()
 export class UsersService {
@@ -62,8 +62,8 @@ export class UsersService {
 
     // Emit user update event
     await this.kafkaService.emitMessage(
-      MessageTypes.USER_UPDATED,
       response.data,
+      KafkaTopics.USER_UPDATED,
     );
 
     return response;
@@ -82,7 +82,7 @@ export class UsersService {
     await this.userRepository.delete(id);
 
     // Emit user delete event
-    await this.kafkaService.emitMessage(MessageTypes.USER_DELETED, data);
+    await this.kafkaService.emitMessage(data, KafkaTopics.USER_DELETED);
 
     return new ResponseFormat({
       status: 'success',

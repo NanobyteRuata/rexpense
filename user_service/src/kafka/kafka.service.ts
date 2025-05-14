@@ -1,7 +1,5 @@
 import { Injectable, Inject, OnModuleInit } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
-import { v4 as uuidv4 } from 'uuid';
-import { KafkaMessage } from './kafka.models';
 import { lastValueFrom } from 'rxjs';
 import { KafkaTopics } from './kafka.constants';
 
@@ -19,22 +17,8 @@ export class KafkaService implements OnModuleInit {
   /**
    * Emit a message to a Kafka topic with standardized format
    */
-  async emitMessage<T>(
-    type: string,
-    payload: T,
-    topic: KafkaTopics = KafkaTopics.USER_SERVICE,
-  ): Promise<void> {
+  async emitMessage<T>(message: T, topic: KafkaTopics): Promise<void> {
     try {
-      const message: KafkaMessage<T> = {
-        messageId: uuidv4(),
-        timestamp: new Date().toISOString(),
-        version: '1.0', // Message schema version
-        source: 'user-service',
-        type,
-        payload,
-      };
-
-      // Using emit() instead of send() as per project requirements
       await lastValueFrom(this.kafkaClient.emit(topic, message));
     } catch (error) {
       console.error(`Failed to emit message to topic ${topic}:`, error);

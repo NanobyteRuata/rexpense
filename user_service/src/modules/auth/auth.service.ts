@@ -27,7 +27,7 @@ import { ResetPasswordDto } from 'src/modules/auth/dtos/requests/reset-password.
 import { EmailService } from 'src/common/services/email.service';
 import { EmailServiceException } from 'src/core/exceptions/common-exceptions';
 import { KafkaService } from 'src/kafka/kafka.service';
-import { MessageTypes } from 'src/kafka/kafka.constants';
+import { KafkaTopics } from 'src/kafka/kafka.constants';
 
 @Injectable()
 export class AuthService {
@@ -171,7 +171,7 @@ export class AuthService {
     await this.authRepository.save(auth);
 
     // emit user registered event
-    await this.kafkaService.emitMessage(MessageTypes.USER_CREATED, auth.user);
+    await this.kafkaService.emitMessage(auth.user, KafkaTopics.USER_CREATED);
 
     return new ResponseFormat({
       message: 'Registered successfully!',

@@ -18,7 +18,7 @@ import {
             brokers: [process.env.KAFKA_BOOTSTRAP_SERVERS || 'localhost:9092'],
           },
           consumer: {
-            groupId: 'user-service-group',
+            groupId: 'user-service',
             allowAutoTopicCreation: true,
           },
           producer: {
