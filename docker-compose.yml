@@ -67,7 +67,7 @@ services:
       dockerfile: Dockerfile
     container_name: transaction_service
     ports:
-      - '${TRANSACTION_APP_PORT}:${TRANSACTION_APP_PORT}'
+      - '${TRANSACTION_APP_PORT}:8000'
     environment:
       - SECRET_KEY=${TRANSACTION_SECRET_KEY}
       - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
@@ -83,6 +83,46 @@ services:
       - kafka-init
     volumes:
       - ./transaction_service:/app
+    networks:
+      - rexpense_network
+
+  # BUDGET SERVICE
+  budget_service_db:
+    image: postgres:13
+    container_name: budget_service_db
+    ports:
+      - '${BUDGET_DB_PORT}:5432'
+    environment:
+      POSTGRES_DB: ${BUDGET_DB_DATABASE}
+      POSTGRES_USER: ${BUDGET_DB_USERNAME}
+      POSTGRES_PASSWORD: ${BUDGET_DB_PASSWORD}
+    volumes:
+      - budget_service_data:/var/lib/postgresql/data
+    networks:
+      - rexpense_network
+
+  budget_service:
+    build:
+      context: ./budget_service
+      dockerfile: Dockerfile
+    container_name: budget_service
+    ports:
+      - '${BUDGET_APP_PORT}:8000'
+    environment:
+      - SECRET_KEY=${BUDGET_SECRET_KEY}
+      - DB_HOST=budget_service_db
+      - DB_PORT=5432
+      - DB_DATABASE=${BUDGET_DB_DATABASE}
+      - DB_USERNAME=${BUDGET_DB_USERNAME}
+      - DB_PASSWORD=${BUDGET_DB_PASSWORD}
+      - DB_SYNCHRONIZE=${BUDGET_DB_SYNCHRONIZE}
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+    depends_on:
+      - budget_service_db
+      - kafka
+      - kafka-init
+    volumes:
+      - ./budget_service:/app
     networks:
       - rexpense_network
 
@@ -160,3 +200,4 @@ volumes:
   transaction_service_data:
   zookeeper_data:
   zookeeper_log:
+  budget_service_data:
