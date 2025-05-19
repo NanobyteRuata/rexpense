@@ -140,3 +140,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 KAFKA_BOOTSTRAP_SERVERS = os.environ.get('KAFKA_BOOTSTRAP_SERVERS') or 'localhost:9092'
+
+TRANSACTION_SERVICE_URL = os.environ.get('TRANSACTION_APP_URL') or 'http://transaction_service:8000'
+
+INTERNAL_API_SECRET = os.environ.get('INTERNAL_API_SECRET')

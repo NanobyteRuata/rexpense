@@ -32,7 +32,11 @@ JWT_ACCESS_SECRET = env('JWT_ACCESS_SECRET')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "transaction-service",
+    "localhost",
+    "127.0.0.1",
+]
 
 
 # Application definition
@@ -143,42 +147,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 KAFKA_BOOTSTRAP_SERVERS = os.environ.get('KAFKA_BOOTSTRAP_SERVERS') or 'localhost:9092'
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,  # Keep Django's default loggers
-    'formatters': {
-        'verbose': {
-            'format': '[{asctime}] {levelname} {name} {message}',
-            'style': '{',
-        },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'stream': sys.stdout,  # Ensures logs go to Docker logs
-            'formatter': 'verbose',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',  # Show INFO and above
-    },
-    'loggers': {
-        # Make sure your app loggers propagate to root
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-        # Example for your Kafka app
-        'kafka_app': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-    },
-}
+INTERNAL_API_SECRET = os.environ.get('INTERNAL_API_SECRET')

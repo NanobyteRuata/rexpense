@@ -1,12 +1,14 @@
 from rest_framework import viewsets
 from rest_framework.response import Response
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from django.db.models import Sum, Q
 from .models import Transaction, Category
 from .serializers import TransactionReadSerializer, TransactionWriteSerializer, CategorySerializer
 from rest_framework.permissions import IsAuthenticated
 from .mixin import ReadWriteSerializerMixin
 from rest_framework.exceptions import AuthenticationFailed
+from django.conf import settings
+from .permissions import AllowInternalOrAuthenticated
 
 class TransactionViewSet(ReadWriteSerializerMixin, viewsets.ModelViewSet):
     queryset = Transaction.objects.all()
@@ -34,6 +36,31 @@ class TransactionViewSet(ReadWriteSerializerMixin, viewsets.ModelViewSet):
         expense = next((item['total'] for item in totals if item['transaction_type'] == 'expense'), 0)
         
         return Response({'income': income, 'expense': expense, 'balance': income - expense})
+    
+    @action(detail=False, methods=['get'], permission_classes=[AllowInternalOrAuthenticated])
+    def sum(self, request):
+        user_id = request.GET.get('user_id') or self.request.user.id
+        category_id = request.GET.get('category')
+        start = request.GET.get('start')
+        end = request.GET.get('end')
+
+        if not (user_id and category_id and start and end):
+            return Response({"error": "Missing required parameters."}, status=400)
+
+        try:
+            # Convert category_id to int if needed
+            category_id = int(category_id)
+        except ValueError:
+            return Response({"error": "Invalid category id."}, status=400)
+
+        qs = Transaction.objects.filter(
+            user_id=user_id,
+            category_id=category_id,
+            date__gte=start,
+            date__lte=end
+        )
+        total = qs.aggregate(sum=Sum('amount'))['sum'] or 0
+        return Response({"sum": float(total)})
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
