@@ -2,15 +2,16 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
 COPY . .
 
-# Expose the port the app runs on
 EXPOSE 8000
 
-# Command to run the application
-CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+CMD ["sh", "-c", "python manage.py migrate && \
+    if [ \"$DJANGO_ENV\" = \"production\" ]; then \
+      gunicorn budget_service.wsgi:application --bind 0.0.0.0:8000; \
+    else \
+      python manage.py runserver 0.0.0.0:8000; \
+    fi"]

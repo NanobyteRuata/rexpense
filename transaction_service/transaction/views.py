@@ -1,14 +1,29 @@
 from rest_framework import viewsets
 from rest_framework.response import Response
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import action
 from django.db.models import Sum, Q
 from .models import Transaction, Category
 from .serializers import TransactionReadSerializer, TransactionWriteSerializer, CategorySerializer
 from rest_framework.permissions import IsAuthenticated
 from .mixin import ReadWriteSerializerMixin
 from rest_framework.exceptions import AuthenticationFailed
-from django.conf import settings
 from .permissions import AllowInternalOrAuthenticated
+from .utils import send_user_fetch_request
+from .models import UserReference
+from kafka_app.producer import KafkaProducer
+from kafka_app.constants import KafkaTopics
+import logging
+
+logger = logging.getLogger(__name__)
+
+kafka_producer = KafkaProducer()
+
+def emit_transaction_event(topic, payload, user_id):
+    payload['user'] = user_id
+    kafka_producer.emit_event(
+        topic=topic,
+        payload=payload
+    )
 
 class TransactionViewSet(ReadWriteSerializerMixin, viewsets.ModelViewSet):
     queryset = Transaction.objects.all()
@@ -22,9 +37,39 @@ class TransactionViewSet(ReadWriteSerializerMixin, viewsets.ModelViewSet):
         return Transaction.objects.filter(user_id=self.request.user.id)
 
     def perform_create(self, serializer):
+        user_id = self.request.user.id
+        if not UserReference.objects.filter(id=user_id).exists():
+            send_user_fetch_request(user_id)
+
         if self.request.user.is_admin:
             serializer.save()
-        serializer.save(user_id=self.request.user.id)
+        else:
+            serializer.save(user_id=user_id)
+        
+        payload = serializer.data
+        emit_transaction_event(
+            topic=KafkaTopics.TRANSACTION_CREATED,
+            payload=payload,
+            user_id=user_id
+        )
+
+    def perform_update(self, serializer):
+        serializer.save()
+        payload = serializer.data
+        emit_transaction_event(
+            topic=KafkaTopics.TRANSACTION_UPDATED,
+            payload=payload,
+            user_id=self.request.user.id
+        )
+
+    def perform_destroy(self, instance):
+        payload = TransactionReadSerializer(instance).data
+        instance.delete()
+        emit_transaction_event(
+            topic=KafkaTopics.TRANSACTION_DELETED,
+            payload=payload,
+            user_id=self.request.user.id
+        )
 
     @action(detail=False, methods=['get'])
     def balance(self, request):
@@ -56,6 +101,7 @@ class TransactionViewSet(ReadWriteSerializerMixin, viewsets.ModelViewSet):
         qs = Transaction.objects.filter(
             user_id=user_id,
             category_id=category_id,
+            transaction_type="expense",
             date__gte=start,
             date__lte=end
         )

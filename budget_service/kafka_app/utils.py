@@ -1,6 +1,7 @@
 import logging
-import datetime
+from datetime import date
 from .constants import KafkaTopics
+from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 
@@ -87,12 +88,47 @@ def handle_user_deleted(payload):
     except Exception as e:
         logger.error(f"Error handling user.deleted event: {e}")
 
-def get_event_handlers():
-    return {
-        KafkaTopics.USER_CREATED: handle_user_registered,
-        KafkaTopics.USER_UPDATED: handle_user_updated,
-        KafkaTopics.USER_DELETED: handle_user_deleted
-    }
+def handle_transaction_created(payload):
+    """Process transaction.created events"""
+    try:
+        # Use lazy import to avoid circular reference during Django startup
+        from budget_app.models import Budget
+        from budget_app.utils import get_sum_spent
+
+        user_id = payload.get('user')
+        category_id = payload.get('category')
+        
+        today = date.today()
+        
+        try:
+            budgets = Budget.objects.filter(
+                user=user_id,
+                category=category_id,
+                period_start__lte=today,
+                period_end__gte=today
+            )
+        except Budget.DoesNotExist:
+            logger.warning(f"No budgets found for user_id={user_id} and category_id={category_id}")
+            return
+        
+        for budget in budgets:
+            sum = get_sum_spent(user_id, category_id, budget.period_start, budget.period_end)
+            
+            if sum > budget.amount:
+                logger.error(f"Budget {budget.name} exceeded for user_id={user_id}")
+                pass
+                # TODO: NOTIFICATION_SERVICE => send notification
+            else:
+                sorted_thresholds = sorted(budget.thresholds, reverse=True)
+                for threshold in sorted_thresholds:
+                    if sum > (budget.amount * Decimal(str(threshold))):
+                        logger.error(f"Budget threshold {threshold} of {budget.name} exceeded for user_id={user_id}")
+                        pass
+                        # TODO: NOTIFICATION_SERVICE => send notification
+                        break
+
+    except Exception as e:
+        logger.error(f"Error handling transaction.created event: {e}")
 
 def event_router(topic, data):
     if topic == KafkaTopics.USER_CREATED:
@@ -101,5 +137,7 @@ def event_router(topic, data):
         handle_user_updated(data)
     elif topic == KafkaTopics.USER_DELETED:
         handle_user_deleted(data)
+    elif topic == KafkaTopics.TRANSACTION_CREATED:
+        handle_transaction_created(data)
     else:
         logger.warning(f"No handler for topic: {topic}")

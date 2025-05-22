@@ -11,7 +11,7 @@ class TransactionReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Transaction
-        fields = ['id', 'transaction_type', 'amount', 'category', 'date', 'description']
+        fields = ['id', 'user', 'transaction_type', 'amount', 'category', 'date', 'description']
 
 class TransactionWriteSerializer(serializers.ModelSerializer):
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), required=False, allow_null=True)

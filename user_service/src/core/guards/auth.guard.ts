@@ -72,6 +72,10 @@ export class AuthGuard implements CanActivate {
       const isPublicEndpoint = this.isGuarded(context, IS_PUBLIC_KEY);
       if (isPublicEndpoint) return true;
 
+      // If Internal request, no need to be user
+      const isInternalRequest = request.headers['x-internal-secret'] === process.env.INTERNAL_API_SECRET;
+      if (isInternalRequest) return true;
+
       // Allow only logged in user
       const user = await this.authenticate(request);
       request.user = user;

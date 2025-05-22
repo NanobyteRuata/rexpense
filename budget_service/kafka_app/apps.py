@@ -24,7 +24,14 @@ class KafkaAppConfig(AppConfig):
                 
                 # Start the consumer with topics to subscribe
                 self.consumer = KafkaConsumer(
-                    topics=[KafkaTopics.USER_CREATED, KafkaTopics.USER_UPDATED, KafkaTopics.USER_DELETED], 
+                    topics=[
+                        KafkaTopics.USER_CREATED,
+                        KafkaTopics.USER_UPDATED,
+                        KafkaTopics.USER_DELETED,
+                        KafkaTopics.TRANSACTION_CREATED,
+                        KafkaTopics.TRANSACTION_UPDATED,
+                        KafkaTopics.TRANSACTION_DELETED
+                    ], 
                     group_id='budget-service',
                     callback=event_router
                 )
